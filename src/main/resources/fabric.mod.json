@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "courierapi",
+  "version": "${version}",
+  "name": "CourierAPI",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/courierapi/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "client": [
+      "com.lunazstudios.courierapi.client.CourierapiClient"
+    ],
+    "main": [
+      "com.lunazstudios.courierapi.Courierapi"
+    ]
+  },
+  "mixins": [
+    "courierapi.mixins.json",
+    {
+      "config": "courierapi.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
