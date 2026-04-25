@@ -24,7 +24,19 @@ animated HUD notifications to players — server-to-client, or purely client-sid
 
 ## Installation (for mod developers)
 
-Add the LunazStudios Maven repository and declare the dependency in your `build.gradle`:
+### 1. Add the version to your `gradle.properties`
+
+```properties
+courierapi_version=0.1
+```
+
+> The full artifact version is assembled automatically as `${minecraft_version}-${courierapi_version}`
+> (e.g. `1.21.11-0.1`), so you only need to track the CourierAPI release number here.
+
+### 2. Add the repository to your `build.gradle`
+
+<details open>
+<summary>Groovy DSL <code>build.gradle</code></summary>
 
 ```gradle
 repositories {
@@ -36,16 +48,45 @@ repositories {
 
 dependencies {
     // Use modImplementation if CourierAPI will be installed separately by the player:
-    modImplementation "com.lunazstudios:CourierAPI:1.0+1.21.11"
+    modImplementation "com.lunazstudios:CourierAPI:${project.minecraft_version}-${project.courierapi_version}"
 
     // Or bundle it inside your own jar with 'include' (no separate install needed):
-    include modImplementation("com.lunazstudios:CourierAPI:1.0+1.21.11")
+    include modImplementation("com.lunazstudios:CourierAPI:${project.minecraft_version}-${project.courierapi_version}")
 }
 ```
 
-> **Tip:** If your mod targets both server and client, `modImplementation` is recommended
-> so server admins install CourierAPI once and all compatible mods share it.
-> Use `include` only if CourierAPI is an internal implementation detail of your mod.
+</details>
+
+<details>
+<summary>Kotlin DSL <code>build.gradle.kts</code></summary>
+
+```kotlin
+repositories {
+    maven {
+        name = "LunazStudios"
+        url  = uri("https://maven.lunazstudios.com/releases")
+    }
+}
+
+dependencies {
+    val minecraftVersion   = project.property("minecraft_version")  as String
+    val courierapiVersion  = project.property("courierapi_version") as String
+
+    // Use modImplementation if CourierAPI will be installed separately by the player:
+    modImplementation("com.lunazstudios:CourierAPI:$minecraftVersion-$courierapiVersion")
+
+    // Or bundle it inside your own jar with 'include' (no separate install needed):
+    include(modImplementation("com.lunazstudios:CourierAPI:$minecraftVersion-$courierapiVersion")!!)
+}
+```
+
+</details>
+
+> **`modImplementation` vs `include`**
+> - Use **`modImplementation`** if CourierAPI will be installed as a separate mod by the player.
+>   Recommended when multiple mods on the same server/client depend on it.
+> - Use **`include`** to bundle CourierAPI inside your own jar so players don't need to install it separately.
+>   Best for client-only mods or when you want zero external dependencies for your users.
 
 ---
 

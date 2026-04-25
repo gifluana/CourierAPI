@@ -1,6 +1,7 @@
 # Gradle
 .gradle/
 build/
+repo/
 
 # IntelliJ IDEA
 .idea/
