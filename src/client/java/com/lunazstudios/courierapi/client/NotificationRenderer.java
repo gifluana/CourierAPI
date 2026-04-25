@@ -1,9 +1,9 @@
 package com.lunazstudios.courierapi.client;
 
 import com.lunazstudios.courierapi.api.Notification;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 import java.util.List;
 
@@ -39,25 +39,25 @@ public final class NotificationRenderer {
     private NotificationRenderer() {}
 
     /** Renders all active notifications. Called every HUD render frame. */
-    public static void render(DrawContext context, float tickDelta) {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.options.hudHidden) return;
+    public static void render(GuiGraphicsExtractor graphics, float tickDelta) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.options.hideGui) return;
 
-        TextRenderer font = mc.textRenderer;
+        Font font = mc.font;
         List<ActiveNotification> notifications = NotificationManager.getActive();
         if (notifications.isEmpty()) return;
 
-        int screenW = context.getScaledWindowWidth();
+        int screenW = graphics.guiWidth();
         int topY    = MARGIN;
 
         for (ActiveNotification active : notifications) {
             float slide   = easeOutCubic(active.slideProgress());
             float visible = active.visibleProgress();
 
-            int xOffset = (int)((1f - slide) * (W + MARGIN));
+            int xOffset = (int) ((1f - slide) * (W + MARGIN));
             int x = screenW - W - MARGIN + xOffset;
 
-            int cardH = renderCard(context, font, active.notification(), x, topY, visible);
+            int cardH = renderCard(graphics, font, active.notification(), x, topY, visible);
             topY += cardH + GAP;
         }
     }
@@ -67,39 +67,60 @@ public final class NotificationRenderer {
      * The height varies between {@link #H_ONE_LINE} and {@link #H_TWO_LINE}
      * depending on whether the description wraps.
      */
-    private static int renderCard(DrawContext context, TextRenderer font, Notification n,
+    private static int renderCard(GuiGraphicsExtractor graphics, Font font, Notification n,
                                   int x, int y, float visibleProgress) {
         int descMaxWidth = W - BORDER_W - PAD_H * 2;
         String[] descLines = wrapDescription(font, n.description(), descMaxWidth);
         int cardH = descLines.length > 1 ? H_TWO_LINE : H_ONE_LINE;
 
         // Background and left accent border
-        context.fill(x, y, x + W, y + cardH, n.backgroundColor());
-        context.fill(x, y, x + BORDER_W, y + cardH, n.borderColor());
+        graphics.fill(x, y, x + W, y + cardH, n.backgroundColor());
+        graphics.fill(x, y, x + BORDER_W, y + cardH, n.borderColor());
 
         // Title + countdown timer on the same row
         int textX = x + BORDER_W + PAD_H;
-        context.drawText(font, truncate(font, n.title(), W - BORDER_W - PAD_H * 2 - 30),
-                textX, y + PAD_V, n.titleColor(), false);
+        graphics.text(
+                font,
+                truncate(font, n.title(), W - BORDER_W - PAD_H * 2 - 30),
+                textX,
+                y + PAD_V,
+                n.titleColor(),
+                false
+        );
 
         int remainSecs = Math.max(0, Math.round((n.durationTicks() * visibleProgress) / 20f));
         String timerText = remainSecs + "s";
-        context.drawText(font, timerText,
-                x + W - PAD_H - font.getWidth(timerText), y + PAD_V, n.titleColor(), false);
+        graphics.text(
+                font,
+                timerText,
+                x + W - PAD_H - font.width(timerText),
+                y + PAD_V,
+                n.titleColor(),
+                false
+        );
 
         // Description — one or two lines
-        int descY = y + PAD_V + font.fontHeight + 3;
-        context.drawText(font, descLines[0], textX, descY, n.descriptionColor(), false);
+        int descY = y + PAD_V + font.lineHeight + 3;
+        graphics.text(font, descLines[0], textX, descY, n.descriptionColor(), false);
+
         if (descLines.length > 1) {
-            context.drawText(font, descLines[1], textX, descY + font.fontHeight + 2, n.descriptionColor(), false);
+            graphics.text(
+                    font,
+                    descLines[1],
+                    textX,
+                    descY + font.lineHeight + 2,
+                    n.descriptionColor(),
+                    false
+            );
         }
 
         // Progress bar
         int barY = y + cardH - BAR_H;
-        context.fill(x, barY, x + W, y + cardH, darken(n.borderColor(), 0.35f));
-        int barFill = (int)(W * visibleProgress);
+        graphics.fill(x, barY, x + W, y + cardH, darken(n.borderColor(), 0.35f));
+
+        int barFill = (int) (W * visibleProgress);
         if (barFill > 0) {
-            context.fill(x, barY, x + barFill, y + cardH, n.borderColor());
+            graphics.fill(x, barY, x + barFill, y + cardH, n.borderColor());
         }
 
         return cardH;
@@ -115,14 +136,14 @@ public final class NotificationRenderer {
      *
      * @return a 1- or 2-element array of ready-to-render strings
      */
-    private static String[] wrapDescription(TextRenderer font, String text, int maxWidth) {
-        if (font.getWidth(text) <= maxWidth) {
+    private static String[] wrapDescription(Font font, String text, int maxWidth) {
+        if (font.width(text) <= maxWidth) {
             return new String[]{ text };
         }
 
         // Find how much fits on line 1 with the "-" marker reserved
-        int hyphenWidth = font.getWidth("-");
-        String fitted   = font.trimToWidth(text, maxWidth - hyphenWidth);
+        int hyphenWidth = font.width("-");
+        String fitted   = font.plainSubstrByWidth(text, maxWidth - hyphenWidth);
 
         // Prefer breaking at a word boundary
         int lastSpace = fitted.lastIndexOf(' ');
@@ -130,16 +151,18 @@ public final class NotificationRenderer {
         String line2  = text.substring(line1.length()).stripLeading();
 
         return new String[]{
-            line1 + "-",
-            truncate(font, line2, maxWidth)
+                line1 + "-",
+                truncate(font, line2, maxWidth)
         };
     }
 
-    private static String truncate(TextRenderer font, String text, int maxWidth) {
-        if (font.getWidth(text) <= maxWidth) return text;
+    private static String truncate(Font font, String text, int maxWidth) {
+        if (font.width(text) <= maxWidth) return text;
+
         String ellipsis = "...";
-        int limit = maxWidth - font.getWidth(ellipsis);
-        return font.trimToWidth(text, limit) + ellipsis;
+        int limit = maxWidth - font.width(ellipsis);
+
+        return font.plainSubstrByWidth(text, limit) + ellipsis;
     }
 
     private static float easeOutCubic(float t) {
@@ -148,9 +171,10 @@ public final class NotificationRenderer {
 
     private static int darken(int argb, float factor) {
         int a  = (argb >> 24) & 0xFF;
-        int r  = (int)(((argb >> 16) & 0xFF) * factor);
-        int gv = (int)(((argb >>  8) & 0xFF) * factor);
-        int b  = (int)( (argb        & 0xFF) * factor);
+        int r  = (int) (((argb >> 16) & 0xFF) * factor);
+        int gv = (int) (((argb >>  8) & 0xFF) * factor);
+        int b  = (int) ( (argb        & 0xFF) * factor);
+
         return (a << 24) | (r << 16) | (gv << 8) | b;
     }
 }

@@ -5,7 +5,7 @@ import com.lunazstudios.courierapi.Courierapi;
 import com.lunazstudios.courierapi.api.CourierAPI;
 import com.lunazstudios.courierapi.api.Notification;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,7 +57,7 @@ public final class JsonNotificationWatcher {
     }
 
     private static void processFile(MinecraftServer server) {
-        Path file = server.getRunDirectory().resolve(FILE_NAME);
+        Path file = server.getServerDirectory().resolve(FILE_NAME);
         if (!Files.exists(file)) return;
 
         try {
@@ -108,7 +108,7 @@ public final class JsonNotificationWatcher {
             CourierAPI.broadcast(server, notification);
             return;
         }
-        ServerPlayerEntity player = server.getPlayerManager().getPlayer(target);
+        ServerPlayer player = server.getPlayerList().getPlayerByName(target);
         if (player != null) {
             CourierAPI.send(player, notification);
         } else {

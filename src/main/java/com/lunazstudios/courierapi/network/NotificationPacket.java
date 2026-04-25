@@ -2,26 +2,25 @@ package com.lunazstudios.courierapi.network;
 
 import com.lunazstudios.courierapi.Courierapi;
 import com.lunazstudios.courierapi.api.Notification;
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.packet.CustomPayload;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.Identifier;
 
-/** S2C packet that carries a {@link Notification} from the server to a client. */
-public record NotificationPacket(Notification notification) implements CustomPayload {
+public record NotificationPacket(Notification notification) implements CustomPacketPayload {
 
-    public static final CustomPayload.Id<NotificationPacket> ID =
-            new CustomPayload.Id<>(Identifier.of(Courierapi.MODID, "notification"));
+    public static final Type<NotificationPacket> TYPE =
+            new Type<>(Identifier.fromNamespaceAndPath(Courierapi.MODID, "notification"));
 
-    public static final PacketCodec<RegistryByteBuf, NotificationPacket> CODEC =
-            PacketCodec.tuple(
-                    Notification.PACKET_CODEC.cast(),
+    public static final StreamCodec<RegistryFriendlyByteBuf, NotificationPacket> CODEC =
+            StreamCodec.composite(
+                    Notification.STREAM_CODEC,
                     NotificationPacket::notification,
                     NotificationPacket::new
             );
 
     @Override
-    public CustomPayload.Id<? extends CustomPayload> getId() {
-        return ID;
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 }

@@ -20,8 +20,8 @@ public class Courierapi implements ModInitializer {
     public void onInitialize() {
         PacketHandler.register();
 
-        ServerLifecycleEvents.SERVER_STARTING.register(server -> NotificationDefinitions.reload(server));
-        ServerTickEvents.END_SERVER_TICK.register(server -> JsonNotificationWatcher.onServerTick(server));
+        ServerLifecycleEvents.SERVER_STARTING.register(NotificationDefinitions::reload);
+        ServerTickEvents.END_SERVER_TICK.register(JsonNotificationWatcher::onServerTick);
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
                 CourierCommand.register(dispatcher));
     }

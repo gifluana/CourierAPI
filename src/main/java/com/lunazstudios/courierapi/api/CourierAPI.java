@@ -3,7 +3,7 @@ package com.lunazstudios.courierapi.api;
 import com.lunazstudios.courierapi.network.NotificationPacket;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Server-side API entry point for CourierAPI.
@@ -37,7 +37,7 @@ public final class CourierAPI {
      * @param player       the target player
      * @param notification the notification to display
      */
-    public static void send(ServerPlayerEntity player, Notification notification) {
+    public static void send(ServerPlayer player, Notification notification) {
         ServerPlayNetworking.send(player, new NotificationPacket(notification));
     }
 
@@ -49,7 +49,8 @@ public final class CourierAPI {
      */
     public static void broadcast(MinecraftServer server, Notification notification) {
         NotificationPacket packet = new NotificationPacket(notification);
-        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             ServerPlayNetworking.send(player, packet);
         }
     }

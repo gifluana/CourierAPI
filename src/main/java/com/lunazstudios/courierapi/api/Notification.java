@@ -1,8 +1,8 @@
 package com.lunazstudios.courierapi.api;
 
 import io.netty.buffer.ByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.codec.PacketCodecs;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
 
 /**
  * Immutable data object representing a HUD notification.
@@ -38,25 +38,26 @@ public record Notification(
     public static final int DEFAULT_BORDER_COLOR      = 0xFFFFFF55;
 
     /** Internal codec used to serialize/deserialize this record over the network. */
-    public static final PacketCodec<ByteBuf, Notification> PACKET_CODEC = new PacketCodec<>() {
+    public static final StreamCodec<ByteBuf, Notification> STREAM_CODEC = new StreamCodec<>() {
         @Override
         public Notification decode(ByteBuf buf) {
-            String title            = PacketCodecs.STRING.decode(buf);
-            String description      = PacketCodecs.STRING.decode(buf);
-            int    durationTicks    = PacketCodecs.VAR_INT.decode(buf);
+            String title            = ByteBufCodecs.STRING_UTF8.decode(buf);
+            String description      = ByteBufCodecs.STRING_UTF8.decode(buf);
+            int    durationTicks    = ByteBufCodecs.VAR_INT.decode(buf);
             int    titleColor       = buf.readInt();
             int    descriptionColor = buf.readInt();
             int    backgroundColor  = buf.readInt();
             int    borderColor      = buf.readInt();
+
             return new Notification(title, description, durationTicks,
                     titleColor, descriptionColor, backgroundColor, borderColor);
         }
 
         @Override
         public void encode(ByteBuf buf, Notification n) {
-            PacketCodecs.STRING.encode(buf, n.title());
-            PacketCodecs.STRING.encode(buf, n.description());
-            PacketCodecs.VAR_INT.encode(buf, n.durationTicks());
+            ByteBufCodecs.STRING_UTF8.encode(buf, n.title());
+            ByteBufCodecs.STRING_UTF8.encode(buf, n.description());
+            ByteBufCodecs.VAR_INT.encode(buf, n.durationTicks());
             buf.writeInt(n.titleColor());
             buf.writeInt(n.descriptionColor());
             buf.writeInt(n.backgroundColor());

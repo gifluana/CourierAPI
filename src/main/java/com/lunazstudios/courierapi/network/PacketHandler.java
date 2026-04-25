@@ -9,6 +9,6 @@ public final class PacketHandler {
 
     /** Registers the S2C {@link NotificationPacket} type. Called during mod initialization. */
     public static void register() {
-        PayloadTypeRegistry.playS2C().register(NotificationPacket.ID, NotificationPacket.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(NotificationPacket.TYPE, NotificationPacket.CODEC);
     }
 }

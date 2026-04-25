@@ -6,7 +6,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 
 public class CourierapiClient implements ClientModInitializer {
 
@@ -15,10 +15,15 @@ public class CourierapiClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> NotificationManager.tick());
 
         HudElementRegistry.addLast(
-                Identifier.of(Courierapi.MODID, "notifications"),
-                (context, tickCounter) -> NotificationRenderer.render(context, tickCounter.getTickProgress(true)));
+                Identifier.fromNamespaceAndPath(Courierapi.MODID, "notifications"),
+                (graphics, tickCounter) -> NotificationRenderer.render(
+                        graphics,
+                        tickCounter.getGameTimeDeltaPartialTick(true)
+                )
+        );
 
-        ClientPlayNetworking.registerGlobalReceiver(NotificationPacket.ID, (payload, context) ->
-                context.client().execute(() -> NotificationManager.queue(payload.notification())));
+        ClientPlayNetworking.registerGlobalReceiver(NotificationPacket.TYPE, (payload, context) ->
+                context.client().execute(() -> NotificationManager.queue(payload.notification()))
+        );
     }
 }

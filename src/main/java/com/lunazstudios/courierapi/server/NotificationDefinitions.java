@@ -51,7 +51,7 @@ public final class NotificationDefinitions {
      */
     public static void reload(MinecraftServer server) {
         definitions.clear();
-        Path file = server.getRunDirectory().resolve(FILE_NAME);
+        Path file = server.getServerDirectory().resolve(FILE_NAME);
 
         if (!Files.exists(file)) {
             createDefaultFile(file);

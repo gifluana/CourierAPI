@@ -1,9 +1,9 @@
 ![CourierAPI Logo.](https://i.imgur.com/sBPv1NS.png)
 
-**CourierAPI** is a Fabric mod library for Minecraft 1.21.11 that lets any mod send
+**CourierAPI** is a Fabric mod library for newer Minecraft versions that lets any mod send
 animated HUD notifications to players — server-to-client, or purely client-side.
 
-![Minecraft 1.21.11](https://img.shields.io/badge/Minecraft-1.21.11-green)
+![Minecraft 1.21.11-26.1.2](https://img.shields.io/badge/Minecraft-1.21.11_to_26.1.2-green)
 ![Fabric](https://img.shields.io/badge/Loader-Fabric-blue)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow)
 
