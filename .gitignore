@@ -2,6 +2,7 @@
 .gradle/
 build/
 repo/
+branding/
 
 # IntelliJ IDEA
 .idea/

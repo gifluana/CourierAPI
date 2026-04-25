@@ -14,7 +14,7 @@ import java.util.List;
  * <ul>
  *   <li>A colored left accent border.</li>
  *   <li>The notification title and a countdown timer (top row).</li>
- *   <li>The description text (second row).</li>
+ *   <li>The description text — wraps to a second line if needed, with a {@code -} continuation marker.</li>
  *   <li>A progress bar at the bottom that drains as time runs out.</li>
  * </ul>
  *
@@ -24,13 +24,17 @@ import java.util.List;
 public final class NotificationRenderer {
 
     private static final int W        = 210;
-    private static final int H        = 50;
     private static final int MARGIN   = 6;
     private static final int GAP      = 4;
     private static final int BORDER_W = 3;
     private static final int PAD_H    = 8;
     private static final int PAD_V    = 8;
     private static final int BAR_H    = 3;
+
+    /** Card height when the description fits on one line. */
+    private static final int H_ONE_LINE = 50;
+    /** Card height when the description wraps to two lines. */
+    private static final int H_TWO_LINE = 62;
 
     private NotificationRenderer() {}
 
@@ -53,35 +57,82 @@ public final class NotificationRenderer {
             int xOffset = (int)((1f - slide) * (W + MARGIN));
             int x = screenW - W - MARGIN + xOffset;
 
-            renderCard(context, font, active.notification(), x, topY, visible);
-            topY += H + GAP;
+            int cardH = renderCard(context, font, active.notification(), x, topY, visible);
+            topY += cardH + GAP;
         }
     }
 
-    private static void renderCard(DrawContext context, TextRenderer font, Notification n,
-                                   int x, int y, float visibleProgress) {
-        context.fill(x, y, x + W, y + H, n.backgroundColor());
-        context.fill(x, y, x + BORDER_W, y + H, n.borderColor());
+    /**
+     * Renders a single notification card and returns the height it occupied.
+     * The height varies between {@link #H_ONE_LINE} and {@link #H_TWO_LINE}
+     * depending on whether the description wraps.
+     */
+    private static int renderCard(DrawContext context, TextRenderer font, Notification n,
+                                  int x, int y, float visibleProgress) {
+        int descMaxWidth = W - BORDER_W - PAD_H * 2;
+        String[] descLines = wrapDescription(font, n.description(), descMaxWidth);
+        int cardH = descLines.length > 1 ? H_TWO_LINE : H_ONE_LINE;
 
+        // Background and left accent border
+        context.fill(x, y, x + W, y + cardH, n.backgroundColor());
+        context.fill(x, y, x + BORDER_W, y + cardH, n.borderColor());
+
+        // Title + countdown timer on the same row
         int textX = x + BORDER_W + PAD_H;
         context.drawText(font, truncate(font, n.title(), W - BORDER_W - PAD_H * 2 - 30),
                 textX, y + PAD_V, n.titleColor(), false);
 
         int remainSecs = Math.max(0, Math.round((n.durationTicks() * visibleProgress) / 20f));
         String timerText = remainSecs + "s";
-        int timerX = x + W - PAD_H - font.getWidth(timerText);
-        context.drawText(font, timerText, timerX, y + PAD_V, n.titleColor(), false);
+        context.drawText(font, timerText,
+                x + W - PAD_H - font.getWidth(timerText), y + PAD_V, n.titleColor(), false);
 
-        context.drawText(font, truncate(font, n.description(), W - BORDER_W - PAD_H * 2),
-                textX, y + PAD_V + font.fontHeight + 3, n.descriptionColor(), false);
+        // Description — one or two lines
+        int descY = y + PAD_V + font.fontHeight + 3;
+        context.drawText(font, descLines[0], textX, descY, n.descriptionColor(), false);
+        if (descLines.length > 1) {
+            context.drawText(font, descLines[1], textX, descY + font.fontHeight + 2, n.descriptionColor(), false);
+        }
 
-        int barY = y + H - BAR_H;
-        context.fill(x, barY, x + W, y + H, darken(n.borderColor(), 0.35f));
-
+        // Progress bar
+        int barY = y + cardH - BAR_H;
+        context.fill(x, barY, x + W, y + cardH, darken(n.borderColor(), 0.35f));
         int barFill = (int)(W * visibleProgress);
         if (barFill > 0) {
-            context.fill(x, barY, x + barFill, y + H, n.borderColor());
+            context.fill(x, barY, x + barFill, y + cardH, n.borderColor());
         }
+
+        return cardH;
+    }
+
+    /**
+     * Splits {@code text} into at most two display lines for the given {@code maxWidth}.
+     *
+     * <p>If the text fits on one line it is returned as-is.
+     * Otherwise the first line is broken at the last word boundary that fits,
+     * a {@code -} continuation marker is appended, and the remainder becomes the second line
+     * (truncated with {@code ...} if still too long).
+     *
+     * @return a 1- or 2-element array of ready-to-render strings
+     */
+    private static String[] wrapDescription(TextRenderer font, String text, int maxWidth) {
+        if (font.getWidth(text) <= maxWidth) {
+            return new String[]{ text };
+        }
+
+        // Find how much fits on line 1 with the "-" marker reserved
+        int hyphenWidth = font.getWidth("-");
+        String fitted   = font.trimToWidth(text, maxWidth - hyphenWidth);
+
+        // Prefer breaking at a word boundary
+        int lastSpace = fitted.lastIndexOf(' ');
+        String line1  = lastSpace > 0 ? fitted.substring(0, lastSpace) : fitted;
+        String line2  = text.substring(line1.length()).stripLeading();
+
+        return new String[]{
+            line1 + "-",
+            truncate(font, line2, maxWidth)
+        };
     }
 
     private static String truncate(TextRenderer font, String text, int maxWidth) {
